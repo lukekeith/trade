@@ -132,27 +132,21 @@ export const ChartPanel = observer(() => {
     };
   }, []);
 
-  // Clear chart immediately when symbol changes
+  // Handle symbol and timeframe changes
   useEffect(() => {
-    if (!symbolStore.selectedSymbol) return;
+    if (!symbolStore.selectedSymbol || !candlestickSeriesRef.current || !chartRef.current) return;
 
     // If symbol changed, clear the chart immediately
     if (lastRenderedSymbolRef.current !== symbolStore.selectedSymbol) {
-      if (candlestickSeriesRef.current) {
-        candlestickSeriesRef.current.setData([]);
-      }
+      candlestickSeriesRef.current.setData([]);
       setIsDataRendered(false);
       lastRenderedSymbolRef.current = symbolStore.selectedSymbol;
     }
 
     // Calculate how many candles we need based on timeframe
-    // We want to fetch enough data to cover the visible range plus some buffer
     const daysToShow = TIMEFRAME_RANGES[selectedTimeframe] || 365;
-
-    // Calculate approximate number of candles needed
-    // This is a rough estimate - the actual number may vary
     const candlesPerDay: Record<Timeframe, number> = {
-      '1m': 390,   // ~6.5 hours of trading
+      '1m': 390,
       '2m': 195,
       '5m': 78,
       '10m': 39,
@@ -162,52 +156,44 @@ export const ChartPanel = observer(() => {
       '2h': 3.25,
       '1d': 1,
     };
-
     const candlesNeeded = Math.ceil(daysToShow * (candlesPerDay[selectedTimeframe] || 1));
-    const limit = Math.max(200, candlesNeeded); // At least 200, or more if needed
+    const limit = Math.max(200, candlesNeeded);
 
     // Fetch candles for selected symbol and timeframe
     candleStore.fetchCandles(symbolStore.selectedSymbol, selectedTimeframe, limit);
-  }, [symbolStore.selectedSymbol, selectedTimeframe]);
 
-  // Update chart when candle data changes
-  useEffect(() => {
-    if (!symbolStore.selectedSymbol || !candlestickSeriesRef.current || !chartRef.current) return;
-
+    // Check if we already have data for this symbol/timeframe
     const candles = candleStore.getCandlesForSymbol(symbolStore.selectedSymbol, selectedTimeframe);
 
-    if (candles.length === 0) {
+    if (candles.length > 0) {
+      // We have data, render it immediately
+      const chartData: CandlestickData[] = candles
+        .map((candle) => ({
+          time: new Date(candle.timestamp).getTime() / 1000,
+          open: Number(candle.open),
+          high: Number(candle.high),
+          low: Number(candle.low),
+          close: Number(candle.close),
+        }))
+        .sort((a, b) => a.time - b.time);
+
+      candlestickSeriesRef.current.setData(chartData);
+
+      // Set visible range
+      const now = Date.now() / 1000;
+      const secondsToShow = daysToShow * 24 * 60 * 60;
+      const fromTime = now - secondsToShow;
+
+      chartRef.current.timeScale().setVisibleRange({
+        from: fromTime as any,
+        to: now as any,
+      });
+
+      setIsDataRendered(true);
+    } else {
       setIsDataRendered(false);
-      return;
     }
-
-    const chartData: CandlestickData[] = candles
-      .map((candle) => ({
-        time: new Date(candle.timestamp).getTime() / 1000,
-        open: Number(candle.open),
-        high: Number(candle.high),
-        low: Number(candle.low),
-        close: Number(candle.close),
-      }))
-      .sort((a, b) => a.time - b.time); // Sort by time ascending
-
-    candlestickSeriesRef.current.setData(chartData);
-
-    // Calculate visible range based on timeframe
-    const daysToShow = TIMEFRAME_RANGES[selectedTimeframe] || 365;
-    const now = Date.now() / 1000; // Current time in seconds
-    const secondsToShow = daysToShow * 24 * 60 * 60; // Convert days to seconds
-    const fromTime = now - secondsToShow;
-
-    // Set visible range to show the appropriate time period
-    chartRef.current.timeScale().setVisibleRange({
-      from: fromTime as any,
-      to: now as any,
-    });
-
-    // Mark data as rendered
-    setIsDataRendered(true);
-  }, [candleStore.candles, symbolStore.selectedSymbol, selectedTimeframe]);
+  }, [symbolStore.selectedSymbol, selectedTimeframe, candleStore.candles]);
 
   const handleTimeframeChange = (timeframe: Timeframe) => {
     setSelectedTimeframe(timeframe);
