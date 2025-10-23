@@ -27,8 +27,10 @@ export const ChartPanel = observer(() => {
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const isFetchingMoreRef = useRef(false);
+  const lastRenderedSymbolRef = useRef<string | null>(null);
 
   const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>('1d');
+  const [isDataRendered, setIsDataRendered] = useState(false);
 
   // Initialize chart
   useEffect(() => {
@@ -130,9 +132,18 @@ export const ChartPanel = observer(() => {
     };
   }, []);
 
-  // Update chart data when symbol or timeframe changes
+  // Clear chart immediately when symbol changes
   useEffect(() => {
     if (!symbolStore.selectedSymbol) return;
+
+    // If symbol changed, clear the chart immediately
+    if (lastRenderedSymbolRef.current !== symbolStore.selectedSymbol) {
+      if (candlestickSeriesRef.current) {
+        candlestickSeriesRef.current.setData([]);
+      }
+      setIsDataRendered(false);
+      lastRenderedSymbolRef.current = symbolStore.selectedSymbol;
+    }
 
     // Calculate how many candles we need based on timeframe
     // We want to fetch enough data to cover the visible range plus some buffer
@@ -165,7 +176,10 @@ export const ChartPanel = observer(() => {
 
     const candles = candleStore.getCandlesForSymbol(symbolStore.selectedSymbol, selectedTimeframe);
 
-    if (candles.length === 0) return;
+    if (candles.length === 0) {
+      setIsDataRendered(false);
+      return;
+    }
 
     const chartData: CandlestickData[] = candles
       .map((candle) => ({
@@ -190,6 +204,9 @@ export const ChartPanel = observer(() => {
       from: fromTime as any,
       to: now as any,
     });
+
+    // Mark data as rendered
+    setIsDataRendered(true);
   }, [candleStore.candles, symbolStore.selectedSymbol, selectedTimeframe]);
 
   const handleTimeframeChange = (timeframe: Timeframe) => {
@@ -205,7 +222,10 @@ export const ChartPanel = observer(() => {
     ? candleStore.getCandlesForSymbol(symbolStore.selectedSymbol, selectedTimeframe)
     : [];
 
-  const showLoading = symbolStore.selectedSymbol && (candleStore.isLoading || candles.length === 0);
+  // Show loading if:
+  // 1. A symbol is selected AND
+  // 2. (Data is still loading OR data hasn't been rendered yet OR no candles available)
+  const showLoading = symbolStore.selectedSymbol && (!isDataRendered || candleStore.isLoading || candles.length === 0);
   const showEmpty = !symbolStore.selectedSymbol;
 
   return (
