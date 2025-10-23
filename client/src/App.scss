@@ -2,8 +2,9 @@
 @use './styles/mixins' as *;
 
 .app-container {
-  min-height: 100vh;
+  height: 100vh;
   @include flex-column;
+  overflow: hidden;
 
   // Top Navigation Header
   .header {
@@ -52,48 +53,19 @@
   // Main Content Area
   .main-content {
     flex: 1;
-    padding: $spacing-lg;
+    padding: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; // Important for flex child
 
     .panels-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: $spacing-lg;
-      height: 100%;
-
-      .panel {
-        @include panel;
-        @include custom-scrollbar;
-        display: flex;
-        flex-direction: column;
-
-        .panel-header {
-          @include flex-between;
-          margin-bottom: $spacing-lg;
-
-          .panel-title {
-            font-size: $font-lg;
-            font-weight: $font-semibold;
-          }
-
-          .settings-button {
-            color: $muted-foreground;
-            padding: $spacing-xs;
-            font-size: $font-xl;
-            @include transition(color);
-
-            &:hover {
-              color: $foreground;
-            }
-          }
-        }
-
-        .panel-content {
-          color: $muted-foreground;
-          font-size: $font-sm;
-          flex: 1;
-        }
-      }
+      grid-template-columns: 400px 1fr;
+      gap: 0;
+      flex: 1;
+      min-height: 0; // Important for nested flex
+      overflow: hidden;
     }
   }
 }

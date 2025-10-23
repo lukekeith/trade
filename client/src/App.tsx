@@ -1,6 +1,22 @@
+import { useEffect } from 'react';
+import { websocketService } from './services/websocket';
+import { TrendsPanel } from './components/TrendsPanel';
+import { ChartPanel } from './components/ChartPanel';
 import './App.scss';
 
 function App() {
+  useEffect(() => {
+    // Connect to WebSocket on mount
+    console.log('🚀 Connecting to WebSocket...');
+    websocketService.connect();
+
+    // Cleanup on unmount
+    return () => {
+      console.log('👋 Disconnecting from WebSocket...');
+      websocketService.disconnect();
+    };
+  }, []);
+
   return (
     <div className="app-container">
       {/* Top Navigation */}
@@ -21,22 +37,10 @@ function App() {
       <main className="main-content">
         <div className="panels-grid">
           {/* Left Panel - Trends */}
-          <div className="panel">
-            <div className="panel-header">
-              <h2 className="panel-title">Trends</h2>
-              <button className="settings-button">⚙️</button>
-            </div>
-            <p className="panel-content">Trends panel coming soon...</p>
-          </div>
+          <TrendsPanel />
 
           {/* Right Panel - Chart */}
-          <div className="panel">
-            <div className="panel-header">
-              <h2 className="panel-title">Chart</h2>
-              <button className="settings-button">⚙️</button>
-            </div>
-            <p className="panel-content">Chart panel coming soon...</p>
-          </div>
+          <ChartPanel />
         </div>
       </main>
     </div>

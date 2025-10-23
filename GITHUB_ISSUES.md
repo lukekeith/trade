@@ -17,10 +17,10 @@ Set up the monorepo structure with three main directories:
 - `/database` - PostgreSQL schema and migrations
 
 **Acceptance Criteria**:
-- [ ] All three directories created with proper structure
-- [ ] README files in each directory
-- [ ] .gitignore configured
-- [ ] Dependencies installed for each project
+- [x] All three directories created with proper structure
+- [x] README files in each directory
+- [x] .gitignore configured
+- [x] Dependencies installed for each project
 
 ---
 
@@ -56,12 +56,12 @@ Create a service that polls Yahoo Finance API for price data:
 - Store data in PostgreSQL
 
 **Acceptance Criteria**:
-- [ ] Polling service implemented with node-cron
-- [ ] Fetches OHLCV data from Yahoo Finance
-- [ ] Respects rate limits
-- [ ] Stores data in candles table
+- [x] Polling service implemented with node-cron
+- [x] Fetches OHLCV data from Yahoo Finance
+- [x] Respects rate limits
+- [x] Stores data in candles table
 - [ ] Unit tests with 80%+ coverage
-- [ ] Error handling and logging
+- [x] Error handling and logging
 
 ---
 
@@ -76,9 +76,9 @@ Set up PostgreSQL database with all required tables:
 - watchlists
 
 **Acceptance Criteria**:
-- [ ] Schema.sql file created and tested
-- [ ] All tables created with proper indexes
-- [ ] Default data inserted
+- [x] Schema.sql file created and tested
+- [x] All tables created with proper indexes
+- [x] Default data inserted
 - [ ] Migration system documented
 - [ ] Database README with setup instructions
 
@@ -136,9 +136,9 @@ Create REST API endpoints for managing symbol watchlists:
 - Validate symbols against Yahoo Finance
 
 **Acceptance Criteria**:
-- [ ] All CRUD endpoints implemented
-- [ ] Symbol validation working
-- [ ] Error handling for invalid symbols
+- [x] All CRUD endpoints implemented
+- [x] Symbol validation working
+- [x] Error handling for invalid symbols
 - [ ] Unit tests with Supertest (80%+ coverage)
 - [ ] API documentation
 
@@ -155,10 +155,10 @@ Endpoints for fetching historical candle data:
 - Efficient database queries
 
 **Acceptance Criteria**:
-- [ ] Endpoint implemented and working
-- [ ] Supports date range filtering
+- [x] Endpoint implemented and working
+- [x] Supports date range filtering
 - [ ] Pagination working correctly
-- [ ] Optimized database queries
+- [x] Optimized database queries
 - [ ] Unit tests (80%+ coverage)
 - [ ] API documentation
 
@@ -212,11 +212,11 @@ Implement WebSocket server for real-time updates:
 - Efficient subscription management
 
 **Acceptance Criteria**:
-- [ ] Socket.io server configured
-- [ ] Connection handling implemented
-- [ ] Subscribe/unsubscribe events working
-- [ ] Broadcast logic implemented
-- [ ] Only active symbols are fetched
+- [x] Socket.io server configured
+- [x] Connection handling implemented
+- [x] Subscribe/unsubscribe events working
+- [x] Broadcast logic implemented
+- [x] Only active symbols are fetched
 - [ ] Integration tests
 
 ---
@@ -373,11 +373,11 @@ Configure dark mode as default theme:
 - TradingView chart dark theme
 
 **Acceptance Criteria**:
-- [ ] Dark mode CSS variables configured
-- [ ] All components use theme colors
+- [x] Dark mode CSS variables configured (SCSS)
+- [x] All components use theme colors
 - [ ] TradingView chart uses dark theme
-- [ ] No light mode artifacts
-- [ ] Professional trading platform aesthetic
+- [x] No light mode artifacts
+- [x] Professional trading platform aesthetic
 
 ---
 

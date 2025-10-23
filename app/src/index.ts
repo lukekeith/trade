@@ -3,6 +3,10 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import symbolsRoutes from './routes/symbols.routes';
+import candlesRoutes from './routes/candles.routes';
+import { WebSocketService } from './services/websocket.service';
+import { PollingService } from './services/polling.service';
 
 dotenv.config();
 
@@ -26,29 +30,49 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// WebSocket connection handling
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
+// API Routes
+app.use('/api/symbols', symbolsRoutes);
+app.use('/api/candles', candlesRoutes);
 
-  socket.on('subscribe', (symbols: string[]) => {
-    console.log('Client subscribed to:', symbols);
-    // TODO: Implement subscription logic
-  });
-
-  socket.on('unsubscribe', (symbols: string[]) => {
-    console.log('Client unsubscribed from:', symbols);
-    // TODO: Implement unsubscription logic
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
+// Add API endpoint to control polling
+app.post('/api/polling/start', (req, res) => {
+  PollingService.start();
+  res.json({ message: 'Polling service started', status: PollingService.getStatus() });
 });
+
+app.post('/api/polling/stop', (req, res) => {
+  PollingService.stop();
+  res.json({ message: 'Polling service stopped', status: PollingService.getStatus() });
+});
+
+app.get('/api/polling/status', (req, res) => {
+  res.json(PollingService.getStatus());
+});
+
+app.post('/api/polling/trigger', async (req, res) => {
+  await PollingService.triggerPoll();
+  res.json({ message: 'Poll triggered successfully' });
+});
+
+// Initialize WebSocket service
+const wsService = new WebSocketService(io);
+
+// Initialize polling service
+PollingService.init(io);
 
 // Start server
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('WebSocket service initialized');
+
+  // Optionally start polling on server start
+  if (process.env.AUTO_START_POLLING === 'true') {
+    console.log('Auto-starting polling service...');
+    PollingService.start();
+  } else {
+    console.log('Polling service ready (use POST /api/polling/start to begin)');
+  }
 });
 
-export { app, io };
+export { app, io, wsService };

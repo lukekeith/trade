@@ -1,0 +1,200 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.trends-panel {
+  @include panel;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+
+  .trends-header {
+    @include flex-between;
+    height: 40px;
+    padding: 0 12px;
+    border-bottom: 1px solid $border;
+
+    h2 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: $foreground;
+    }
+
+    .add-symbol-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: $radius-sm;
+      background: $primary;
+      color: $background;
+      font-size: 20px;
+      cursor: pointer;
+      @include transition(background);
+
+      &:hover {
+        background: lighten($primary, 10%);
+      }
+    }
+  }
+
+  .error-message {
+    @include flex-between;
+    padding: $spacing-sm $spacing-md;
+    background: rgba($danger, 0.1);
+    color: $danger;
+    font-size: $font-sm;
+
+    button {
+      background: none;
+      border: none;
+      color: $danger;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0;
+      margin-left: $spacing-sm;
+    }
+  }
+
+  .add-symbol-input {
+    display: flex;
+    gap: $spacing-sm;
+    padding: $spacing-md;
+    border-bottom: 1px solid $border;
+
+    input {
+      flex: 1;
+      padding: $spacing-sm;
+      background: $surface;
+      border: 1px solid $border;
+      border-radius: $radius-sm;
+      color: $foreground;
+      font-size: $font-md;
+
+      &:focus {
+        outline: none;
+        border-color: $primary;
+      }
+    }
+
+    button {
+      padding: $spacing-sm $spacing-md;
+      border: none;
+      border-radius: $radius-sm;
+      background: $primary;
+      color: $background;
+      cursor: pointer;
+      font-size: $font-sm;
+      @include transition(background);
+
+      &:hover {
+        background: lighten($primary, 10%);
+      }
+
+      &:last-child {
+        background: $surface;
+        color: $foreground;
+
+        &:hover {
+          background: lighten($surface, 5%);
+        }
+      }
+    }
+  }
+
+  .symbols-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-sm 0;
+
+    .loading, .empty-state {
+      padding: $spacing-lg;
+      text-align: center;
+      color: $muted;
+      font-size: $font-sm;
+    }
+
+    .symbol-row {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+      padding: $spacing-md;
+      cursor: pointer;
+      @include transition(background);
+      border-left: 3px solid transparent;
+
+      &:hover {
+        background: rgba($surface, 0.5);
+      }
+
+      &.selected {
+        background: rgba($primary, 0.1);
+        border-left-color: $primary;
+      }
+
+      .symbol-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        .symbol-name {
+          font-size: $font-md;
+          font-weight: 600;
+          color: $foreground;
+        }
+
+        .symbol-price {
+          font-size: $font-sm;
+          color: $muted;
+        }
+      }
+
+      .price-change {
+        font-size: $font-sm;
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: $radius-sm;
+
+        &.positive {
+          color: $success;
+          background: rgba($success, 0.1);
+        }
+
+        &.negative {
+          color: $danger;
+          background: rgba($danger, 0.1);
+        }
+      }
+
+      .remove-btn {
+        width: 24px;
+        height: 24px;
+        border: none;
+        border-radius: $radius-sm;
+        background: transparent;
+        color: $muted;
+        font-size: 20px;
+        cursor: pointer;
+        @include transition(all);
+        opacity: 0;
+
+        &:hover {
+          background: rgba($danger, 0.1);
+          color: $danger;
+        }
+      }
+
+      &:hover .remove-btn {
+        opacity: 1;
+      }
+    }
+  }
+
+  .trends-footer {
+    padding: $spacing-sm $spacing-md;
+    border-top: 1px solid $border;
+    font-size: $font-sm;
+    color: $muted;
+  }
+}

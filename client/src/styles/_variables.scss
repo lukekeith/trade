@@ -1,9 +1,10 @@
 // Color Variables - Dark Theme for Trading Platform
-$background: #0a0e1a;
+$background: #121214;
 $foreground: #e1e7ef;
 $card: #0f1419;
 $card-foreground: #e1e7ef;
-$border: #1e293b;
+$surface: #1a1f2e;
+$border: #5F5F61;
 $primary: #3b82f6;
 $primary-foreground: #ffffff;
 $muted: #1e293b;
@@ -16,6 +17,8 @@ $success: #22c55e;
 $success-foreground: #ffffff;
 $error: #ef4444;
 $error-foreground: #ffffff;
+$danger: #ef4444; // Alias for $error
+$danger-foreground: #ffffff;
 
 // Spacing
 $spacing-xs: 0.25rem;
@@ -34,6 +37,7 @@ $radius-full: 9999px;
 // Font Sizes
 $font-xs: 0.75rem;
 $font-sm: 0.875rem;
+$font-md: 1rem; // Alias for $font-base
 $font-base: 1rem;
 $font-lg: 1.125rem;
 $font-xl: 1.25rem;
