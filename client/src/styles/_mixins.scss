@@ -1,0 +1,77 @@
+// Flexbox Mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+// Transitions
+@mixin transition($property: all, $duration: $transition-base) {
+  transition: $property $duration ease-in-out;
+}
+
+// Button Reset
+@mixin button-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+// Truncate Text
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Scrollbar Styling
+@mixin custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $card;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $muted;
+    border-radius: $radius-sm;
+
+    &:hover {
+      background: $muted-foreground;
+    }
+  }
+}
+
+// Card/Panel Styling
+@mixin panel {
+  background-color: $card;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+}
+
+// Hover Effect
+@mixin hover-lift {
+  @include transition(transform);
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}

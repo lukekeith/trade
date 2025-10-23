@@ -1,0 +1,99 @@
+@use './styles/variables' as *;
+@use './styles/mixins' as *;
+
+.app-container {
+  min-height: 100vh;
+  @include flex-column;
+
+  // Top Navigation Header
+  .header {
+    border-bottom: 1px solid $border;
+    padding: $spacing-md $spacing-lg;
+
+    .nav-container {
+      @include flex-between;
+
+      .nav-tabs {
+        display: flex;
+        gap: $spacing-xl;
+
+        .nav-button {
+          font-size: $font-sm;
+          font-weight: $font-medium;
+          padding: $spacing-sm 0;
+          @include transition(color);
+
+          &.nav-button-active {
+            color: $primary;
+          }
+
+          &.nav-button-inactive {
+            color: $muted-foreground;
+
+            &:hover {
+              color: $foreground;
+            }
+          }
+        }
+      }
+
+      .avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: $radius-full;
+        background-color: $muted;
+        @include flex-center;
+        font-size: $font-sm;
+        font-weight: $font-medium;
+      }
+    }
+  }
+
+  // Main Content Area
+  .main-content {
+    flex: 1;
+    padding: $spacing-lg;
+    overflow: hidden;
+
+    .panels-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: $spacing-lg;
+      height: 100%;
+
+      .panel {
+        @include panel;
+        @include custom-scrollbar;
+        display: flex;
+        flex-direction: column;
+
+        .panel-header {
+          @include flex-between;
+          margin-bottom: $spacing-lg;
+
+          .panel-title {
+            font-size: $font-lg;
+            font-weight: $font-semibold;
+          }
+
+          .settings-button {
+            color: $muted-foreground;
+            padding: $spacing-xs;
+            font-size: $font-xl;
+            @include transition(color);
+
+            &:hover {
+              color: $foreground;
+            }
+          }
+        }
+
+        .panel-content {
+          color: $muted-foreground;
+          font-size: $font-sm;
+          flex: 1;
+        }
+      }
+    }
+  }
+}

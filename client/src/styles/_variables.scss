@@ -1,0 +1,56 @@
+// Color Variables - Dark Theme for Trading Platform
+$background: #0a0e1a;
+$foreground: #e1e7ef;
+$card: #0f1419;
+$card-foreground: #e1e7ef;
+$border: #1e293b;
+$primary: #3b82f6;
+$primary-foreground: #ffffff;
+$muted: #1e293b;
+$muted-foreground: #94a3b8;
+$accent: #1e40af;
+$accent-foreground: #ffffff;
+
+// Success/Error colors for trading
+$success: #22c55e;
+$success-foreground: #ffffff;
+$error: #ef4444;
+$error-foreground: #ffffff;
+
+// Spacing
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 0.75rem;
+$spacing-lg: 1rem;
+$spacing-xl: 1.5rem;
+$spacing-2xl: 2rem;
+
+// Border Radius
+$radius-sm: 0.25rem;
+$radius-md: 0.5rem;
+$radius-lg: 0.75rem;
+$radius-full: 9999px;
+
+// Font Sizes
+$font-xs: 0.75rem;
+$font-sm: 0.875rem;
+$font-base: 1rem;
+$font-lg: 1.125rem;
+$font-xl: 1.25rem;
+$font-2xl: 1.5rem;
+
+// Font Weights
+$font-normal: 400;
+$font-medium: 500;
+$font-semibold: 600;
+$font-bold: 700;
+
+// Transitions
+$transition-fast: 150ms;
+$transition-base: 200ms;
+$transition-slow: 300ms;
+
+// Z-index
+$z-dropdown: 1000;
+$z-modal: 1050;
+$z-tooltip: 1100;
