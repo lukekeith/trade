@@ -2,9 +2,8 @@ import { observer } from 'mobx-react-lite';
 import { useEffect, useRef, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import type { IChartApi, ISeriesApi, CandlestickData } from 'lightweight-charts';
-import { symbolStore } from '../stores/SymbolStore';
-import type { Timeframe } from '../stores/CandleStore';
-import { candleStore } from '../stores/CandleStore';
+import { Application } from '../stores/Application';
+import type { Timeframe } from '../types/candle';
 import '../styles/ChartPanel.scss';
 
 const TIMEFRAMES: Timeframe[] = ['1m', '5m', '15m', '1h', '1d'];
@@ -27,10 +26,13 @@ export const ChartPanel = observer(() => {
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const isFetchingMoreRef = useRef(false);
-  const lastRenderedSymbolRef = useRef<string | null>(null);
 
+  // Local state for timeframe (UI state could also go in Application.ui)
   const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>('1d');
-  const [isDataRendered, setIsDataRendered] = useState(false);
+
+  // Get selected symbol from Application store
+  const selectedSymbol = Application.symbols.selectedSymbol;
+  const symbolObj = Application.symbols.selected;
 
   // Initialize chart
   useEffect(() => {
@@ -70,12 +72,12 @@ export const ChartPanel = observer(() => {
     chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
       const logicalRange = chart.timeScale().getVisibleLogicalRange();
 
-      if (!logicalRange || !symbolStore.selectedSymbol) return;
+      if (!logicalRange || !selectedSymbol) return;
 
       // Check if we're near the left edge (viewing old data)
       const threshold = 20; // Fetch more when within 20 bars of the edge
       if (logicalRange.from < threshold && !isFetchingMoreRef.current) {
-        const candles = candleStore.getCandlesForSymbol(symbolStore.selectedSymbol, selectedTimeframe);
+        const candles = symbolObj?.getCandles(selectedTimeframe) || [];
 
         if (candles.length > 0) {
           const oldestCandle = candles[0];
@@ -86,8 +88,8 @@ export const ChartPanel = observer(() => {
           isFetchingMoreRef.current = true;
 
           // Fetch more historical data before the oldest candle
-          candleStore.fetchCandles(
-            symbolStore.selectedSymbol,
+          Application.symbols.fetchCandles(
+            selectedSymbol,
             selectedTimeframe,
             200,
             undefined,
@@ -132,16 +134,12 @@ export const ChartPanel = observer(() => {
     };
   }, []);
 
-  // Handle symbol and timeframe changes
+  // Handle symbol and timeframe changes - fetch and render data
   useEffect(() => {
-    if (!symbolStore.selectedSymbol || !candlestickSeriesRef.current || !chartRef.current) return;
+    if (!selectedSymbol || !candlestickSeriesRef.current || !chartRef.current) return;
 
-    // If symbol changed, clear the chart immediately
-    if (lastRenderedSymbolRef.current !== symbolStore.selectedSymbol) {
-      candlestickSeriesRef.current.setData([]);
-      setIsDataRendered(false);
-      lastRenderedSymbolRef.current = symbolStore.selectedSymbol;
-    }
+    // Clear chart immediately when symbol changes
+    candlestickSeriesRef.current.setData([]);
 
     // Calculate how many candles we need based on timeframe
     const daysToShow = TIMEFRAME_RANGES[selectedTimeframe] || 365;
@@ -160,65 +158,58 @@ export const ChartPanel = observer(() => {
     const limit = Math.max(200, candlesNeeded);
 
     // Fetch candles for selected symbol and timeframe
-    candleStore.fetchCandles(symbolStore.selectedSymbol, selectedTimeframe, limit);
+    Application.symbols.fetchCandles(selectedSymbol, selectedTimeframe, limit);
+  }, [selectedSymbol, selectedTimeframe]);
 
-    // Check if we already have data for this symbol/timeframe
-    const candles = candleStore.getCandlesForSymbol(symbolStore.selectedSymbol, selectedTimeframe);
+  // Render chart when candle data changes
+  useEffect(() => {
+    if (!symbolObj || !candlestickSeriesRef.current || !chartRef.current) return;
 
-    if (candles.length > 0) {
-      // We have data, render it immediately
-      const chartData: CandlestickData[] = candles
-        .map((candle) => ({
-          time: new Date(candle.timestamp).getTime() / 1000,
-          open: Number(candle.open),
-          high: Number(candle.high),
-          low: Number(candle.low),
-          close: Number(candle.close),
-        }))
-        .sort((a, b) => a.time - b.time);
+    const candles = symbolObj.getCandles(selectedTimeframe);
 
-      candlestickSeriesRef.current.setData(chartData);
+    if (candles.length === 0) return;
 
-      // Set visible range
-      const now = Date.now() / 1000;
-      const secondsToShow = daysToShow * 24 * 60 * 60;
-      const fromTime = now - secondsToShow;
+    const chartData: CandlestickData[] = candles
+      .map((candle) => ({
+        time: new Date(candle.timestamp).getTime() / 1000,
+        open: Number(candle.open),
+        high: Number(candle.high),
+        low: Number(candle.low),
+        close: Number(candle.close),
+      }))
+      .sort((a, b) => a.time - b.time);
 
-      chartRef.current.timeScale().setVisibleRange({
-        from: fromTime as any,
-        to: now as any,
-      });
+    candlestickSeriesRef.current.setData(chartData);
 
-      setIsDataRendered(true);
-    } else {
-      setIsDataRendered(false);
-    }
-  }, [symbolStore.selectedSymbol, selectedTimeframe, candleStore.candles]);
+    // Set visible range
+    const daysToShow = TIMEFRAME_RANGES[selectedTimeframe] || 365;
+    const now = Date.now() / 1000;
+    const secondsToShow = daysToShow * 24 * 60 * 60;
+    const fromTime = now - secondsToShow;
+
+    chartRef.current.timeScale().setVisibleRange({
+      from: fromTime as any,
+      to: now as any,
+    });
+  }, [symbolObj?.candles.get(selectedTimeframe), selectedTimeframe]);
 
   const handleTimeframeChange = (timeframe: Timeframe) => {
     setSelectedTimeframe(timeframe);
-    candleStore.setTimeframe(timeframe);
+    Application.ui.setTimeframe(timeframe);
   };
 
-  const latestCandle = symbolStore.selectedSymbol
-    ? candleStore.getLatestCandle(symbolStore.selectedSymbol, selectedTimeframe)
-    : null;
+  const latestCandle = symbolObj?.getLatestCandle(selectedTimeframe);
+  const isLoading = symbolObj?.isLoading(selectedTimeframe) || false;
+  const candles = symbolObj?.getCandles(selectedTimeframe) || [];
 
-  const candles = symbolStore.selectedSymbol
-    ? candleStore.getCandlesForSymbol(symbolStore.selectedSymbol, selectedTimeframe)
-    : [];
-
-  // Show loading if:
-  // 1. A symbol is selected AND
-  // 2. (Data is still loading OR data hasn't been rendered yet OR no candles available)
-  const showLoading = symbolStore.selectedSymbol && (!isDataRendered || candleStore.isLoading || candles.length === 0);
-  const showEmpty = !symbolStore.selectedSymbol;
+  const showLoading = selectedSymbol && (isLoading || candles.length === 0);
+  const showEmpty = !selectedSymbol;
 
   return (
     <div className="chart-panel">
       <div className="chart-header">
         <div className="chart-title">
-          <h2>{symbolStore.selectedSymbol || 'Select a symbol'}</h2>
+          <h2>{selectedSymbol || 'Select a symbol'}</h2>
           {latestCandle && (
             <div className="price-info">
               <span className="price">${Number(latestCandle.close).toFixed(2)}</span>

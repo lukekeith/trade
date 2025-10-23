@@ -1,45 +1,43 @@
 import { observer } from 'mobx-react-lite';
-import { useEffect, useState } from 'react';
-import { symbolStore } from '../stores/SymbolStore';
-import { candleStore } from '../stores/CandleStore';
+import { useState } from 'react';
+import { Application } from '../stores/Application';
 import '../styles/TrendsPanel.scss';
 
 export const TrendsPanel = observer(() => {
   const [newSymbol, setNewSymbol] = useState('');
   const [showAddInput, setShowAddInput] = useState(false);
 
-  useEffect(() => {
-    // Fetch symbols on mount
-    symbolStore.fetchSymbols();
-  }, []);
-
   const handleAddSymbol = async () => {
     if (!newSymbol.trim()) return;
 
-    const success = await symbolStore.addSymbol(newSymbol.trim());
-    if (success) {
+    try {
+      await Application.symbols.addSymbol(newSymbol.trim());
       setNewSymbol('');
       setShowAddInput(false);
+    } catch (error) {
+      // Error is already set in the store
     }
   };
 
   const handleRemoveSymbol = async (symbol: string) => {
     if (confirm(`Remove ${symbol} from watchlist?`)) {
-      await symbolStore.removeSymbol(symbol);
+      await Application.symbols.removeSymbol(symbol);
     }
   };
 
   const handleSelectSymbol = (symbol: string) => {
-    symbolStore.selectSymbol(symbol);
+    Application.symbols.selectSymbol(symbol);
   };
 
-  const getLatestPrice = (symbol: string) => {
-    const candle = candleStore.getLatestCandle(symbol, '1d');
+  const getLatestPrice = (ticker: string) => {
+    const symbolObj = Application.symbols.getSymbol(ticker);
+    const candle = symbolObj.getLatestCandle('1d');
     return candle ? `$${Number(candle.close).toFixed(2)}` : '—';
   };
 
-  const getPriceChange = (symbol: string) => {
-    const candles = candleStore.getCandlesForSymbol(symbol, '1d');
+  const getPriceChange = (ticker: string) => {
+    const symbolObj = Application.symbols.getSymbol(ticker);
+    const candles = symbolObj.getCandles('1d');
     if (candles.length < 2) return null;
 
     const latest = candles[candles.length - 1];
@@ -67,10 +65,10 @@ export const TrendsPanel = observer(() => {
         </button>
       </div>
 
-      {symbolStore.error && (
+      {Application.symbols.error && (
         <div className="error-message">
-          {symbolStore.error}
-          <button onClick={() => symbolStore.clearError()}>×</button>
+          {Application.symbols.error}
+          <button onClick={() => Application.symbols.clearError()}>×</button>
         </div>
       )}
 
@@ -90,24 +88,24 @@ export const TrendsPanel = observer(() => {
       )}
 
       <div className="symbols-list">
-        {symbolStore.isLoading && symbolStore.symbols.length === 0 ? (
+        {Application.symbols.isLoadingWatchlist && Application.symbols.watchlist.length === 0 ? (
           <div className="loading">Loading symbols...</div>
-        ) : symbolStore.symbols.length === 0 ? (
+        ) : Application.symbols.watchlist.length === 0 ? (
           <div className="empty-state">No symbols in watchlist</div>
         ) : (
-          symbolStore.symbols.map((symbol) => {
-            const priceChange = getPriceChange(symbol);
-            const isSelected = symbol === symbolStore.selectedSymbol;
+          Application.symbols.watchlist.map((ticker) => {
+            const priceChange = getPriceChange(ticker);
+            const isSelected = ticker === Application.symbols.selectedSymbol;
 
             return (
               <div
-                key={symbol}
+                key={ticker}
                 className={`symbol-row ${isSelected ? 'selected' : ''}`}
-                onClick={() => handleSelectSymbol(symbol)}
+                onClick={() => handleSelectSymbol(ticker)}
               >
                 <div className="symbol-info">
-                  <span className="symbol-name">{symbol}</span>
-                  <span className="symbol-price">{getLatestPrice(symbol)}</span>
+                  <span className="symbol-name">{ticker}</span>
+                  <span className="symbol-price">{getLatestPrice(ticker)}</span>
                 </div>
 
                 {priceChange && (
@@ -120,7 +118,7 @@ export const TrendsPanel = observer(() => {
                   className="remove-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleRemoveSymbol(symbol);
+                    handleRemoveSymbol(ticker);
                   }}
                   title="Remove symbol"
                 >
@@ -130,10 +128,6 @@ export const TrendsPanel = observer(() => {
             );
           })
         )}
-      </div>
-
-      <div className="trends-footer">
-        <span className="symbol-count">{symbolStore.symbols.length} symbols</span>
       </div>
     </div>
   );
