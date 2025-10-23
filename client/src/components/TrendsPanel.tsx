@@ -29,29 +29,6 @@ export const TrendsPanel = observer(() => {
     Application.symbols.selectSymbol(symbol);
   };
 
-  const getLatestPrice = (ticker: string) => {
-    const symbolObj = Application.symbols.getSymbol(ticker);
-    const candle = symbolObj.getLatestCandle('1d');
-    return candle ? `$${Number(candle.close).toFixed(2)}` : '—';
-  };
-
-  const getPriceChange = (ticker: string) => {
-    const symbolObj = Application.symbols.getSymbol(ticker);
-    const candles = symbolObj.getCandles('1d');
-    if (candles.length < 2) return null;
-
-    const latest = candles[candles.length - 1];
-    const previous = candles[candles.length - 2];
-    const latestClose = Number(latest.close);
-    const previousClose = Number(previous.close);
-    const change = ((latestClose - previousClose) / previousClose) * 100;
-
-    return {
-      value: change.toFixed(2),
-      isPositive: change >= 0,
-    };
-  };
-
   return (
     <div className="trends-panel">
       <div className="trends-header">
@@ -94,7 +71,10 @@ export const TrendsPanel = observer(() => {
           <div className="empty-state">No symbols in watchlist</div>
         ) : (
           Application.symbols.watchlist.map((ticker) => {
-            const priceChange = getPriceChange(ticker);
+            // Access observable data directly in render for proper MobX reactivity
+            const symbolObj = Application.symbols.getSymbol(ticker);
+            const latestCandle = symbolObj.getLatestCandle('1d');
+            const priceChange = symbolObj.getDailyChange();
             const isSelected = ticker === Application.symbols.selectedSymbol;
 
             return (
@@ -105,12 +85,14 @@ export const TrendsPanel = observer(() => {
               >
                 <div className="symbol-info">
                   <span className="symbol-name">{ticker}</span>
-                  <span className="symbol-price">{getLatestPrice(ticker)}</span>
+                  <span className="symbol-price">
+                    {latestCandle ? `$${Number(latestCandle.close).toFixed(2)}` : '—'}
+                  </span>
                 </div>
 
                 {priceChange && (
                   <div className={`price-change ${priceChange.isPositive ? 'positive' : 'negative'}`}>
-                    {priceChange.isPositive ? '▲' : '▼'} {Math.abs(parseFloat(priceChange.value))}%
+                    {priceChange.isPositive ? '▲' : '▼'} {Math.abs(priceChange.value).toFixed(2)}%
                   </div>
                 )}
 

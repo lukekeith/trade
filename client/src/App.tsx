@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { websocketService } from './services/websocket';
 import { TrendsPanel } from './components/TrendsPanel';
 import { ChartPanel } from './components/ChartPanel';
+import { TrendsWidget } from './components/TrendsWidget';
+import { ConnectionIndicator } from './components/ConnectionIndicator';
 import './App.scss';
 
 function App() {
@@ -22,6 +24,7 @@ function App() {
       {/* Top Navigation */}
       <header className="header">
         <div className="nav-container">
+          <ConnectionIndicator />
           <div className="nav-tabs">
             <button className="nav-button nav-button-active">Dashboard</button>
             <button className="nav-button nav-button-inactive">Strategies</button>
@@ -36,11 +39,14 @@ function App() {
       {/* Main Content Area */}
       <main className="main-content">
         <div className="panels-grid">
-          {/* Left Panel - Trends */}
+          {/* Left Panel - Watchlist */}
           <TrendsPanel />
 
-          {/* Right Panel - Chart */}
+          {/* Center Panel - Chart */}
           <ChartPanel />
+
+          {/* Right Panel - Trends */}
+          <TrendsWidget />
         </div>
       </main>
     </div>

@@ -13,7 +13,7 @@ class WebSocketService {
   connect() {
     if (this.socket?.connected) {
       console.log('WebSocket already connected');
-      return;
+      return this.socket;
     }
 
     const url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
@@ -131,6 +131,13 @@ class WebSocketService {
 
     this.socket.on('error', callback);
     return () => this.socket?.off('error', callback);
+  }
+
+  onTrendsUpdate(callback: (data: any) => void) {
+    if (!this.socket) return;
+
+    this.socket.on('trends:update', callback);
+    return () => this.socket?.off('trends:update', callback);
   }
 
   isConnected(): boolean {

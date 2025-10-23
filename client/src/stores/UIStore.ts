@@ -12,6 +12,9 @@ export class UIStore {
   // Panel states
   showAddSymbolInput = false;
 
+  // Connection status
+  isConnected = false;
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -28,5 +31,12 @@ export class UIStore {
    */
   setShowAddSymbolInput(show: boolean) {
     this.showAddSymbolInput = show;
+  }
+
+  /**
+   * Set connection status
+   */
+  setConnected(connected: boolean) {
+    this.isConnected = connected;
   }
 }

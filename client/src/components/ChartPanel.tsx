@@ -63,6 +63,16 @@ export const ChartPanel = observer(() => {
       borderVisible: false,
       wickUpColor: '#10b981',
       wickDownColor: '#ef4444',
+      priceScaleId: 'right',
+    });
+
+    // Configure price scale to auto-fit by default
+    chart.priceScale('right').applyOptions({
+      autoScale: true,
+      scaleMargins: {
+        top: 0.1,
+        bottom: 0.1,
+      },
     });
 
     chartRef.current = chart;
@@ -141,6 +151,11 @@ export const ChartPanel = observer(() => {
     // Clear chart immediately when symbol changes
     candlestickSeriesRef.current.setData([]);
 
+    // Reset price scale to auto mode (removes any manual scaling from dragging Y-axis)
+    chartRef.current.priceScale('right').applyOptions({
+      autoScale: true,
+    });
+
     // Calculate how many candles we need based on timeframe
     const daysToShow = TIMEFRAME_RANGES[selectedTimeframe] || 365;
     const candlesPerDay: Record<Timeframe, number> = {
@@ -181,7 +196,7 @@ export const ChartPanel = observer(() => {
 
     candlestickSeriesRef.current.setData(chartData);
 
-    // Set visible range
+    // Set visible time range
     const daysToShow = TIMEFRAME_RANGES[selectedTimeframe] || 365;
     const now = Date.now() / 1000;
     const secondsToShow = daysToShow * 24 * 60 * 60;
@@ -191,6 +206,11 @@ export const ChartPanel = observer(() => {
       from: fromTime as any,
       to: now as any,
     });
+
+    // Auto-fit content to visible range (centers the chart on the actual data)
+    setTimeout(() => {
+      chartRef.current?.timeScale().fitContent();
+    }, 0);
   }, [symbolObj?.candles.get(selectedTimeframe), selectedTimeframe]);
 
   const handleTimeframeChange = (timeframe: Timeframe) => {

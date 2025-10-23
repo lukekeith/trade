@@ -38,29 +38,34 @@
 
     .timeframe-selector {
       display: flex;
-      gap: $spacing-sm;
+      gap: 8px;
       flex-wrap: wrap;
 
       .timeframe-btn {
-        padding: $spacing-sm $spacing-md;
-        border: 1px solid $border;
-        border-radius: $radius-sm;
-        background: $surface;
-        color: $muted;
+        // Default state
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        padding: 4px;
+        gap: 10px;
+        width: 29px;
+        height: 25px;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        color: $foreground;
         font-size: $font-sm;
         font-weight: 500;
         cursor: pointer;
         @include transition(all);
 
         &:hover {
-          background: lighten($surface, 5%);
-          border-color: $primary;
-          color: $foreground;
+          background: rgba(255, 255, 255, 0.2);
         }
 
         &.active {
-          background: $primary;
-          border-color: $primary;
+          background: #FFFFFF;
           color: $background;
         }
       }

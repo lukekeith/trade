@@ -20,6 +20,10 @@ export class SymbolsStore {
   isLoadingWatchlist = false;
   error: string | null = null;
 
+  // Trend data refresh interval
+  private trendRefreshInterval: NodeJS.Timeout | null = null;
+  private readonly TREND_TIMEFRAMES: Timeframe[] = ['1m', '5m', '15m', '30m', '1h', '1d'];
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -198,6 +202,43 @@ export class SymbolsStore {
         symbol.setLoading(timeframe, false);
       });
     }
+  }
+
+  /**
+   * Fetch trend data for all symbols in watchlist (initial load only)
+   * Real-time updates come via WebSocket after this
+   */
+  async fetchAllTrendData() {
+    try {
+      const response = await fetch('http://localhost:3000/api/trends');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch trends');
+      }
+
+      const data = await response.json();
+      this.updateTrendsFromWebSocket(data);
+    } catch (error) {
+      console.error('Error fetching initial trend data:', error);
+    }
+  }
+
+  /**
+   * Update trends from WebSocket data
+   * Called both on initial HTTP load and for real-time WebSocket updates
+   */
+  updateTrendsFromWebSocket(data: any) {
+    runInAction(() => {
+      // Update each symbol's trend data from Python calculations
+      for (const [ticker, trends] of Object.entries(data.trends)) {
+        const symbolObj = this.getSymbol(ticker);
+
+        // Store pre-calculated trend results from Python (via Node WebSocket)
+        for (const [timeframe, trendData] of Object.entries(trends as Record<string, { trend: 'up' | 'down' | 'neutral', percentChange: number | null }>)) {
+          symbolObj.setTrendData(timeframe as Timeframe, trendData.trend, trendData.percentChange);
+        }
+      }
+    });
   }
 
   /**

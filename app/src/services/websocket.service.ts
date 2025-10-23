@@ -238,6 +238,14 @@ export class WebSocketService {
   }
 
   /**
+   * Broadcast trend updates to all connected clients
+   */
+  broadcastTrends(trendsData: any) {
+    this.io.emit('trends:update', trendsData);
+    console.log('📊 Broadcast trends to', this.subscriptions.size, 'clients');
+  }
+
+  /**
    * Get current subscription stats
    */
   getStats() {

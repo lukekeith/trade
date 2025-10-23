@@ -61,7 +61,7 @@
 
     .panels-grid {
       display: grid;
-      grid-template-columns: 400px 1fr;
+      grid-template-columns: 400px 1fr 400px;
       gap: 0;
       flex: 1;
       min-height: 0; // Important for nested flex

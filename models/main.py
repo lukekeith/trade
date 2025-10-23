@@ -1,17 +1,23 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Literal
+from typing import List, Literal, Dict
 import pandas as pd
 import pandas_ta as ta
 from datetime import datetime
+from database import fetch_candles, fetch_watchlist_symbols, init_db_pool
 
 app = FastAPI(title="Trade Calculation Service", version="1.0.0")
+
+# Initialize database pool on startup
+@app.on_event("startup")
+async def startup_event():
+    init_db_pool()
 
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -173,6 +179,86 @@ async def calculate_trend_endpoint(request: CalculateTrendRequest):
         )
 
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/trends")
+async def get_all_trends():
+    """
+    Calculate trends for all symbols and timeframes from database
+    Returns all trends in a single response - Python calculates from DB data only
+    """
+    try:
+        # Get watchlist symbols
+        symbols = fetch_watchlist_symbols()
+        timeframes = ['1m', '5m', '15m', '30m', '1h', '1d']
+
+        all_trends: Dict[str, Dict[str, Dict[str, any]]] = {}
+
+        for symbol in symbols:
+            symbol_trends = {}
+
+            for timeframe in timeframes:
+                try:
+                    # Fetch candles from database (need enough for EMA calculation)
+                    candle_data = fetch_candles(symbol, timeframe, limit=200)
+
+                    # Determine minimum candles needed based on timeframe
+                    # Shorter timeframes use 20 EMA, longer use 50 EMA
+                    min_candles = 20 if timeframe in ['1m', '5m', '15m', '30m'] else 50
+
+                    if len(candle_data) < min_candles:
+                        symbol_trends[timeframe] = {
+                            'trend': 'neutral',
+                            'percentChange': None
+                        }
+                        continue
+
+                    # Convert to DataFrame for pandas_ta
+                    df = candles_to_dataframe([CandleData(**c) for c in candle_data])
+
+                    # Use industry-standard moving average for trend determination
+                    # Price above MA = Uptrend, Price below MA = Downtrend
+                    ema_period = 20 if timeframe in ['1m', '5m', '15m', '30m'] else 50
+                    ema_series = calculate_ema(df, ema_period)
+
+                    # Get latest values
+                    current_price = df['close'].iloc[-1]
+                    current_ema = ema_series.iloc[-1]
+
+                    # Calculate percent change from EMA (shows trend strength)
+                    percent_from_ema = ((current_price - current_ema) / current_ema) * 100
+
+                    # Determine trend: Price above EMA = Up, Price below EMA = Down
+                    if current_price > current_ema:
+                        trend = 'up'
+                    elif current_price < current_ema:
+                        trend = 'down'
+                    else:
+                        trend = 'neutral'  # Rare case: price exactly on EMA
+
+                    symbol_trends[timeframe] = {
+                        'trend': trend,
+                        'percentChange': round(percent_from_ema, 4)
+                    }
+
+                except Exception as e:
+                    print(f"Error calculating trend for {symbol}:{timeframe}: {e}")
+                    symbol_trends[timeframe] = {
+                        'trend': 'neutral',
+                        'percentChange': None
+                    }
+
+            all_trends[symbol] = symbol_trends
+
+        return {
+            'trends': all_trends,
+            'symbols': symbols,
+            'timestamp': datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        print(f"Error in get_all_trends: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

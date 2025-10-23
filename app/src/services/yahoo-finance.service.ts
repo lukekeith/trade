@@ -2,6 +2,60 @@ import axios from 'axios';
 import { Candle, Timeframe } from '../types';
 
 /**
+ * Common currency codes for forex detection
+ */
+const CURRENCY_CODES = [
+  'USD', 'EUR', 'JPY', 'GBP', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK', 'NZD',
+  'MXN', 'SGD', 'HKD', 'NOK', 'KRW', 'TRY', 'RUB', 'INR', 'BRL', 'ZAR'
+];
+
+/**
+ * Detect if a symbol is likely a forex pair
+ * Examples: USDJPY, EURUSD, GBPUSD
+ */
+function isLikelyForexPair(symbol: string): boolean {
+  // Already has =X suffix
+  if (symbol.endsWith('=X')) {
+    return true;
+  }
+
+  // Check if it's 6 characters and consists of two valid currency codes
+  if (symbol.length === 6) {
+    const base = symbol.substring(0, 3).toUpperCase();
+    const quote = symbol.substring(3, 6).toUpperCase();
+    return CURRENCY_CODES.includes(base) && CURRENCY_CODES.includes(quote);
+  }
+
+  return false;
+}
+
+/**
+ * Normalize symbol for Yahoo Finance API
+ * Forex pairs need =X suffix (e.g., USDJPY → USDJPY=X)
+ */
+function normalizeSymbolForYahoo(symbol: string): string {
+  // Already has =X, return as is
+  if (symbol.endsWith('=X')) {
+    return symbol.toUpperCase();
+  }
+
+  // If it looks like a forex pair, add =X
+  if (isLikelyForexPair(symbol)) {
+    return `${symbol.toUpperCase()}=X`;
+  }
+
+  // Otherwise, just uppercase it (stocks, ETFs, etc.)
+  return symbol.toUpperCase();
+}
+
+/**
+ * Get the display symbol (remove =X suffix for user display)
+ */
+function getDisplaySymbol(symbol: string): string {
+  return symbol.replace('=X', '');
+}
+
+/**
  * Map our timeframes to Yahoo Finance intervals
  */
 const TIMEFRAME_TO_INTERVAL: Record<Timeframe, string> = {
@@ -47,7 +101,10 @@ export class YahooFinanceService {
    */
   static async validateSymbol(symbol: string): Promise<boolean> {
     try {
-      const url = `${this.BASE_URL}/chart/${symbol}`;
+      // Normalize the symbol (add =X for forex, uppercase, etc.)
+      const normalizedSymbol = normalizeSymbolForYahoo(symbol);
+
+      const url = `${this.BASE_URL}/chart/${normalizedSymbol}`;
       const response = await axios.get(url, {
         params: {
           interval: '1d',
@@ -74,13 +131,18 @@ export class YahooFinanceService {
     }
   ): Promise<Candle[]> {
     try {
+      // Normalize symbol for Yahoo Finance (add =X for forex, uppercase, etc.)
+      const normalizedSymbol = normalizeSymbolForYahoo(symbol);
+      // Get display symbol (remove =X for storage)
+      const displaySymbol = getDisplaySymbol(symbol);
+
       const interval = TIMEFRAME_TO_INTERVAL[timeframe];
       const { range } = getPeriodRange(timeframe);
 
       const period1 = options?.period1 ? Math.floor(options.period1.getTime() / 1000) : undefined;
       const period2 = options?.period2 ? Math.floor(options.period2.getTime() / 1000) : Math.floor(Date.now() / 1000);
 
-      const url = `${this.BASE_URL}/chart/${symbol}`;
+      const url = `${this.BASE_URL}/chart/${normalizedSymbol}`;
       const params: any = {
         interval,
         range: period1 ? undefined : range,
@@ -106,8 +168,9 @@ export class YahooFinanceService {
       }
 
       // Convert Yahoo Finance format to our Candle format
+      // Use display symbol (without =X) for storage
       const candles: Candle[] = timestamps.map((timestamp: number, index: number) => ({
-        symbol: symbol.toUpperCase(),
+        symbol: displaySymbol.toUpperCase(),
         timeframe,
         timestamp: new Date(timestamp * 1000),
         open: quote.open[index],
@@ -135,10 +198,13 @@ export class YahooFinanceService {
    */
   static async getQuote(symbol: string) {
     try {
+      // Normalize symbol for Yahoo Finance
+      const normalizedSymbol = normalizeSymbolForYahoo(symbol);
+
       const url = `${this.BASE_URL}/quote`;
       const response = await axios.get(url, {
         params: {
-          symbols: symbol
+          symbols: normalizedSymbol
         }
       });
 

@@ -5,8 +5,10 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import symbolsRoutes from './routes/symbols.routes';
 import candlesRoutes from './routes/candles.routes';
+import trendsRoutes from './routes/trends.routes';
 import { WebSocketService } from './services/websocket.service';
 import { PollingService } from './services/polling.service';
+import { TrendsService } from './services/trends.service';
 
 dotenv.config();
 
@@ -33,6 +35,7 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/symbols', symbolsRoutes);
 app.use('/api/candles', candlesRoutes);
+app.use('/api/trends', trendsRoutes);
 
 // Add API endpoint to control polling
 app.post('/api/polling/start', (req, res) => {
@@ -60,11 +63,19 @@ const wsService = new WebSocketService(io);
 // Initialize polling service
 PollingService.init(io);
 
+// Initialize Trends service
+const trendsService = new TrendsService(process.env.PYTHON_SERVICE_URL);
+
 // Start server
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('WebSocket service initialized');
+
+  // Start real-time trends broadcasting
+  trendsService.start(60000, (trendsData) => {
+    wsService.broadcastTrends(trendsData);
+  });
 
   // Optionally start polling on server start
   if (process.env.AUTO_START_POLLING === 'true') {
