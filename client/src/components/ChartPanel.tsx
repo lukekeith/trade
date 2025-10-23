@@ -9,6 +9,19 @@ import '../styles/ChartPanel.scss';
 
 const TIMEFRAMES: Timeframe[] = ['1m', '5m', '15m', '1h', '1d'];
 
+// Map timeframes to their visible day ranges
+const TIMEFRAME_RANGES: Record<Timeframe, number> = {
+  '1m': 2,
+  '2m': 2,
+  '5m': 10,
+  '10m': 20,
+  '15m': 20,
+  '30m': 30,
+  '1h': 60,
+  '2h': 60,
+  '1d': 365, // 1 year
+};
+
 export const ChartPanel = observer(() => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -121,13 +134,34 @@ export const ChartPanel = observer(() => {
   useEffect(() => {
     if (!symbolStore.selectedSymbol) return;
 
+    // Calculate how many candles we need based on timeframe
+    // We want to fetch enough data to cover the visible range plus some buffer
+    const daysToShow = TIMEFRAME_RANGES[selectedTimeframe] || 365;
+
+    // Calculate approximate number of candles needed
+    // This is a rough estimate - the actual number may vary
+    const candlesPerDay: Record<Timeframe, number> = {
+      '1m': 390,   // ~6.5 hours of trading
+      '2m': 195,
+      '5m': 78,
+      '10m': 39,
+      '15m': 26,
+      '30m': 13,
+      '1h': 6.5,
+      '2h': 3.25,
+      '1d': 1,
+    };
+
+    const candlesNeeded = Math.ceil(daysToShow * (candlesPerDay[selectedTimeframe] || 1));
+    const limit = Math.max(200, candlesNeeded); // At least 200, or more if needed
+
     // Fetch candles for selected symbol and timeframe
-    candleStore.fetchCandles(symbolStore.selectedSymbol, selectedTimeframe, 200);
+    candleStore.fetchCandles(symbolStore.selectedSymbol, selectedTimeframe, limit);
   }, [symbolStore.selectedSymbol, selectedTimeframe]);
 
   // Update chart when candle data changes
   useEffect(() => {
-    if (!symbolStore.selectedSymbol || !candlestickSeriesRef.current) return;
+    if (!symbolStore.selectedSymbol || !candlestickSeriesRef.current || !chartRef.current) return;
 
     const candles = candleStore.getCandlesForSymbol(symbolStore.selectedSymbol, selectedTimeframe);
 
@@ -144,6 +178,18 @@ export const ChartPanel = observer(() => {
       .sort((a, b) => a.time - b.time); // Sort by time ascending
 
     candlestickSeriesRef.current.setData(chartData);
+
+    // Calculate visible range based on timeframe
+    const daysToShow = TIMEFRAME_RANGES[selectedTimeframe] || 365;
+    const now = Date.now() / 1000; // Current time in seconds
+    const secondsToShow = daysToShow * 24 * 60 * 60; // Convert days to seconds
+    const fromTime = now - secondsToShow;
+
+    // Set visible range to show the appropriate time period
+    chartRef.current.timeScale().setVisibleRange({
+      from: fromTime as any,
+      to: now as any,
+    });
   }, [candleStore.candles, symbolStore.selectedSymbol, selectedTimeframe]);
 
   const handleTimeframeChange = (timeframe: Timeframe) => {
