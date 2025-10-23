@@ -33,20 +33,37 @@ export class CandleStore {
     });
   }
 
-  async fetchCandles(symbol: string, timeframe: Timeframe, limit = 100) {
+  async fetchCandles(
+    symbol: string,
+    timeframe: Timeframe,
+    limit = 100,
+    startDate?: Date,
+    endDate?: Date
+  ) {
     this.isLoading = true;
     this.error = null;
 
     try {
+      const params = new URLSearchParams({ limit: limit.toString() });
+
+      if (startDate) {
+        params.append('startDate', startDate.toISOString());
+      }
+
+      if (endDate) {
+        params.append('endDate', endDate.toISOString());
+      }
+
       const response = await fetch(
-        `http://localhost:3000/api/candles/${symbol}/${timeframe}?limit=${limit}`
+        `http://localhost:3000/api/candles/${symbol}/${timeframe}?${params.toString()}`
       );
 
       if (!response.ok) throw new Error('Failed to fetch candles');
 
       const data = await response.json();
       runInAction(() => {
-        this.setCandlesForSymbol(symbol, timeframe, data.candles || []);
+        // Merge new candles with existing ones
+        this.mergeCandlesForSymbol(symbol, timeframe, data.candles || []);
         this.isLoading = false;
       });
     } catch (error) {
@@ -106,6 +123,36 @@ export class CandleStore {
 
     const symbolCandles = this.candles.get(symbol)!;
     symbolCandles.set(timeframe, candles);
+  }
+
+  private mergeCandlesForSymbol(symbol: string, timeframe: Timeframe, newCandles: CandleData[]) {
+    if (!this.candles.has(symbol)) {
+      this.candles.set(symbol, new Map());
+    }
+
+    const symbolCandles = this.candles.get(symbol)!;
+    const existingCandles = symbolCandles.get(timeframe) || [];
+
+    // Create a map of existing candles by timestamp for quick lookup
+    const candleMap = new Map<number, CandleData>();
+
+    existingCandles.forEach(candle => {
+      const timestamp = new Date(candle.timestamp).getTime();
+      candleMap.set(timestamp, candle);
+    });
+
+    // Add or update with new candles
+    newCandles.forEach(candle => {
+      const timestamp = new Date(candle.timestamp).getTime();
+      candleMap.set(timestamp, candle);
+    });
+
+    // Convert back to sorted array
+    const mergedCandles = Array.from(candleMap.values()).sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    symbolCandles.set(timeframe, mergedCandles);
   }
 
   getCandlesForSymbol(symbol: string, timeframe: Timeframe): CandleData[] {

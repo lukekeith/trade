@@ -1,6 +1,8 @@
 import cron, { ScheduledTask } from 'node-cron';
 import { YahooFinanceService } from './yahoo-finance.service';
+import { PythonCalculationService } from './python-calculation.service';
 import { CandleModel } from '../models/candle.model';
+import { TrendModel } from '../models/trend.model';
 import { WatchlistModel } from '../models/watchlist.model';
 import { Timeframe } from '../types';
 import { Server as SocketIOServer } from 'socket.io';
@@ -132,6 +134,9 @@ export class PollingService {
           this.broadcastCandle(symbol, timeframe, latestCandle);
 
           console.log(`Updated ${symbol}:${timeframe} - Close: $${latestCandle.close.toFixed(2)}`);
+
+          // Calculate and store trend for this symbol/timeframe
+          await this.calculateAndStoreTrend(symbol, timeframe, candles);
         } catch (error) {
           console.error(`Error fetching ${symbol}:${timeframe}:`, error);
         }
@@ -143,6 +148,56 @@ export class PollingService {
     } catch (error) {
       console.error(`Error fetching data for ${symbol}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Calculate and store trend using Python service
+   */
+  private static async calculateAndStoreTrend(
+    symbol: string,
+    timeframe: Timeframe,
+    candles: any[]
+  ): Promise<void> {
+    try {
+      // We need at least 20 candles for low reliability trend detection
+      if (candles.length < 20) {
+        return;
+      }
+
+      // Format candles for Python service
+      const formattedCandles = candles.map(candle => ({
+        timestamp: candle.timestamp.toISOString(),
+        open: Number(candle.open),
+        high: Number(candle.high),
+        low: Number(candle.low),
+        close: Number(candle.close),
+        volume: Number(candle.volume)
+      }));
+
+      // Calculate trend using Python service (default: low reliability)
+      const trendData = await PythonCalculationService.calculateTrend(
+        symbol,
+        timeframe,
+        formattedCandles,
+        'low' // Using low reliability for now
+      );
+
+      // Store in database
+      await TrendModel.upsert(
+        symbol,
+        timeframe,
+        trendData.trend,
+        'low',
+        new Date(trendData.timestamp)
+      );
+
+      // Broadcast trend update
+      this.broadcastTrend(symbol, timeframe, trendData.trend);
+
+      console.log(`📊 Trend ${symbol}:${timeframe} = ${trendData.trend.toUpperCase()}`);
+    } catch (error) {
+      console.error(`Error calculating trend for ${symbol}:${timeframe}:`, error);
     }
   }
 
@@ -167,6 +222,32 @@ export class PollingService {
       symbol,
       timeframe,
       candle
+    });
+  }
+
+  /**
+   * Broadcast trend update to WebSocket clients
+   */
+  private static broadcastTrend(symbol: string, timeframe: Timeframe, trend: 'up' | 'down') {
+    if (!this.io) {
+      console.warn('Socket.IO not initialized, cannot broadcast');
+      return;
+    }
+
+    // Broadcast to all clients
+    this.io.emit('trend:update', {
+      symbol,
+      timeframe,
+      trend,
+      timestamp: new Date().toISOString()
+    });
+
+    // Also broadcast to symbol-specific room
+    this.io.to(`symbol:${symbol}`).emit('trend:update', {
+      symbol,
+      timeframe,
+      trend,
+      timestamp: new Date().toISOString()
     });
   }
 

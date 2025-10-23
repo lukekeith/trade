@@ -13,6 +13,7 @@ export const ChartPanel = observer(() => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const isFetchingMoreRef = useRef(false);
 
   const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>('1d');
 
@@ -49,6 +50,39 @@ export const ChartPanel = observer(() => {
 
     chartRef.current = chart;
     candlestickSeriesRef.current = candlestickSeries;
+
+    // Subscribe to visible logical range changes to detect when user scrolls
+    chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+      const logicalRange = chart.timeScale().getVisibleLogicalRange();
+
+      if (!logicalRange || !symbolStore.selectedSymbol) return;
+
+      // Check if we're near the left edge (viewing old data)
+      const threshold = 20; // Fetch more when within 20 bars of the edge
+      if (logicalRange.from < threshold && !isFetchingMoreRef.current) {
+        const candles = candleStore.getCandlesForSymbol(symbolStore.selectedSymbol, selectedTimeframe);
+
+        if (candles.length > 0) {
+          const oldestCandle = candles[0];
+          const oldestTime = new Date(oldestCandle.timestamp);
+
+          console.log(`📊 Scrolling near edge, fetching more historical data before ${oldestTime.toISOString()}`);
+
+          isFetchingMoreRef.current = true;
+
+          // Fetch more historical data before the oldest candle
+          candleStore.fetchCandles(
+            symbolStore.selectedSymbol,
+            selectedTimeframe,
+            200,
+            undefined,
+            oldestTime
+          ).finally(() => {
+            isFetchingMoreRef.current = false;
+          });
+        }
+      }
+    });
 
     // Handle resize with ResizeObserver for more accurate container size tracking
     const handleResize = () => {
