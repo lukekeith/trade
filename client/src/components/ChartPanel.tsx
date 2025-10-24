@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import type { IChartApi, ISeriesApi, CandlestickData } from 'lightweight-charts';
 import { Application } from '../stores/Application';
+import { WidgetHeader } from './WidgetHeader';
 import type { Timeframe } from '../types/candle';
+import type { WidgetType } from '../types/widget';
 import '../styles/ChartPanel.scss';
 
 const TIMEFRAMES: Timeframe[] = ['1m', '5m', '15m', '1h', '1d'];
@@ -21,7 +23,11 @@ const TIMEFRAME_RANGES: Record<Timeframe, number> = {
   '1d': 365, // 1 year
 };
 
-export const ChartPanel = observer(() => {
+interface ChartPanelProps {
+  onWidgetChange?: (newType: WidgetType) => void;
+}
+
+export const ChartPanel = observer(({ onWidgetChange }: ChartPanelProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -46,8 +52,8 @@ export const ChartPanel = observer(() => {
         textColor: '#e1e7ef',
       },
       grid: {
-        vertLines: { color: '#5F5F61' },
-        horzLines: { color: '#5F5F61' },
+        vertLines: { color: 'rgba(255, 255, 255, 0.1)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
       },
       width: container.clientWidth,
       height: container.clientHeight,
@@ -218,6 +224,12 @@ export const ChartPanel = observer(() => {
     Application.ui.setTimeframe(timeframe);
   };
 
+  const handleWidgetChange = (newType: WidgetType) => {
+    if (onWidgetChange) {
+      onWidgetChange(newType);
+    }
+  };
+
   const latestCandle = symbolObj?.getLatestCandle(selectedTimeframe);
   const isLoading = symbolObj?.isLoading(selectedTimeframe) || false;
   const candles = symbolObj?.getCandles(selectedTimeframe) || [];
@@ -226,38 +238,40 @@ export const ChartPanel = observer(() => {
   const showEmpty = !selectedSymbol;
 
   return (
-    <div className="chart-panel">
-      <div className="chart-header">
-        <div className="chart-title">
-          <h2>{selectedSymbol || 'Select a symbol'}</h2>
-          {latestCandle && (
-            <div className="price-info">
-              <span className="price">${Number(latestCandle.close).toFixed(2)}</span>
+    <div className="WidgetChart">
+      <WidgetHeader
+        widgetType="chart"
+        onWidgetChange={handleWidgetChange}
+        actions={
+          <>
+            {selectedSymbol && latestCandle && (
+              <div className="WidgetChart__PriceInfo">
+                <span className="WidgetChart__Price">${Number(latestCandle.close).toFixed(2)}</span>
+              </div>
+            )}
+            <div className="WidgetChart__TimeframeSelector">
+              {TIMEFRAMES.map((tf) => (
+                <button
+                  key={tf}
+                  className={`WidgetChart__TimeframeButton ${tf === selectedTimeframe ? 'WidgetChart__TimeframeButton--active' : ''}`}
+                  onClick={() => handleTimeframeChange(tf)}
+                >
+                  {tf}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+          </>
+        }
+      />
 
-        <div className="timeframe-selector">
-          {TIMEFRAMES.map((tf) => (
-            <button
-              key={tf}
-              className={`timeframe-btn ${tf === selectedTimeframe ? 'active' : ''}`}
-              onClick={() => handleTimeframeChange(tf)}
-            >
-              {tf}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="chart-container" ref={chartContainerRef} />
+      <div className="WidgetChart__Container" ref={chartContainerRef} />
 
       {showLoading && (
-        <div className="chart-loading">Loading chart data...</div>
+        <div className="WidgetChart__Loading">Loading chart data...</div>
       )}
 
       {showEmpty && (
-        <div className="chart-empty">
+        <div className="WidgetChart__Empty">
           Select a symbol from the watchlist to view chart
         </div>
       )}

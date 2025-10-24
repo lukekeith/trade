@@ -1,0 +1,102 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.WidgetHeader {
+  position: relative;
+  background: #202023;
+  border-bottom: 1px solid $border;
+
+  &__Content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 40px;
+    padding: 0 12px;
+  }
+
+  &__TitleWrapper {
+    position: relative;
+  }
+
+  &__Title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.7);
+    @include transition(color);
+
+    &:hover {
+      color: rgba(255, 255, 255, 1);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: left;
+    }
+  }
+
+  &__Actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 12px;
+  }
+
+  &__Icon {
+    flex-shrink: 0;
+  }
+
+  &__Dropdown {
+    position: absolute;
+    top: 100%;
+    left: -12px; // Align with left edge of title bar (compensate for padding)
+    min-width: 200px;
+    background: #202023; // Same as title bar background
+    box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.2); // 4px right, 4px down, black 20%
+    z-index: 1000;
+    overflow: hidden;
+  }
+
+  &__DropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 8px; // Same gap as title button
+    width: 100%;
+    height: 40px; // Same height as title button
+    padding: 0 12px; // Same padding as title bar
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.7); // Default 70% opacity
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    @include transition(all);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2); // White 20% on hover
+      color: rgba(255, 255, 255, 1); // 100% opacity on hover
+    }
+
+    &--active {
+      color: $primary; // Active item uses primary color
+    }
+
+    svg {
+      flex-shrink: 0;
+      width: 16px; // Same icon size as title
+      height: 16px;
+    }
+
+    span {
+      flex: 1;
+    }
+  }
+}

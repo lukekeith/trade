@@ -13,6 +13,7 @@
     "@tailwindcss/postcss": "^4.1.15",
     "clsx": "^2.1.1",
     "lightweight-charts": "^4.2.3",
+    "lucide-react": "^0.546.0",
     "mobx": "^6.15.0",
     "mobx-react-lite": "^4.1.1",
     "react": "^19.1.1",

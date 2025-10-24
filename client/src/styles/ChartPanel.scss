@@ -1,7 +1,7 @@
 @use './variables' as *;
 @use './mixins' as *;
 
-.chart-panel {
+.WidgetChart {
   @include panel;
   display: flex;
   flex-direction: column;
@@ -9,70 +9,53 @@
   overflow: hidden;
   position: relative;
 
-  .chart-header {
-    height: 40px;
-    padding: 0 12px;
-    border-bottom: 1px solid $border;
-    @include flex-between;
+  &__PriceInfo {
+    display: flex;
+    align-items: center;
+    margin-right: 12px;
+  }
 
-    .chart-title {
-      display: flex;
-      align-items: center;
-      gap: 16px;
+  &__Price {
+    font-size: 14px;
+    font-weight: 600;
+    color: $foreground;
+  }
 
-      h2 {
-        margin: 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: $foreground;
-      }
+  &__TimeframeSelector {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
 
-      .price-info {
-        .price {
-          font-size: 14px;
-          font-weight: 600;
-          color: $foreground;
-        }
-      }
+  &__TimeframeButton {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 4px;
+    gap: 10px;
+    width: 29px;
+    height: 25px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: $foreground;
+    font-size: $font-sm;
+    font-weight: 500;
+    cursor: pointer;
+    @include transition(all);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
     }
 
-    .timeframe-selector {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-
-      .timeframe-btn {
-        // Default state
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        padding: 4px;
-        gap: 10px;
-        width: 29px;
-        height: 25px;
-        border: none;
-        border-radius: 4px;
-        background: transparent;
-        color: $foreground;
-        font-size: $font-sm;
-        font-weight: 500;
-        cursor: pointer;
-        @include transition(all);
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-
-        &.active {
-          background: #FFFFFF;
-          color: $background;
-        }
-      }
+    &--active {
+      background: #FFFFFF;
+      color: $background;
     }
   }
 
-  .chart-container {
+  &__Container {
     flex: 1;
     position: relative;
     min-height: 0; // Important for flex child with overflow
@@ -80,7 +63,7 @@
     height: 100%;
   }
 
-  .chart-loading {
+  &__Loading {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -93,7 +76,7 @@
     z-index: 10;
   }
 
-  .chart-empty {
+  &__Empty {
     position: absolute;
     top: 50%;
     left: 50%;

@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { websocketService } from './services/websocket';
-import { TrendsPanel } from './components/TrendsPanel';
-import { ChartPanel } from './components/ChartPanel';
-import { TrendsWidget } from './components/TrendsWidget';
+import { Panel } from './components/Panel';
 import { ConnectionIndicator } from './components/ConnectionIndicator';
 import './App.scss';
 
@@ -39,14 +37,14 @@ function App() {
       {/* Main Content Area */}
       <main className="main-content">
         <div className="panels-grid">
-          {/* Left Panel - Watchlist */}
-          <TrendsPanel />
+          {/* Left Panel - Dynamic Widget */}
+          <Panel panelId="left" />
 
-          {/* Center Panel - Chart */}
-          <ChartPanel />
+          {/* Center Panel - Dynamic Widget */}
+          <Panel panelId="center" />
 
-          {/* Right Panel - Trends */}
-          <TrendsWidget />
+          {/* Right Panel - Dynamic Widget */}
+          <Panel panelId="right" />
         </div>
       </main>
     </div>

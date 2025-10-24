@@ -1,6 +1,26 @@
 @use './styles/variables' as *;
 @use './styles/mixins' as *;
 
+// Set root font size to 14px so that 1rem = 14px
+html {
+  font-size: 14px;
+}
+
+// Reset box-sizing for all elements
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+// Reset body margins and set base styles
+body {
+  margin: 0;
+  font-family: $font-family;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: $background;
+  color: $foreground;
+}
+
 .app-container {
   height: 100vh;
   @include flex-column;

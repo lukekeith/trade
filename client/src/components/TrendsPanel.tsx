@@ -1,9 +1,16 @@
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
+import { Plus, X, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Application } from '../stores/Application';
+import { WidgetHeader } from './WidgetHeader';
+import type { WidgetType } from '../types/widget';
 import '../styles/TrendsPanel.scss';
 
-export const TrendsPanel = observer(() => {
+interface TrendsPanelProps {
+  onWidgetChange?: (newType: WidgetType) => void;
+}
+
+export const TrendsPanel = observer(({ onWidgetChange }: TrendsPanelProps) => {
   const [newSymbol, setNewSymbol] = useState('');
   const [showAddInput, setShowAddInput] = useState(false);
 
@@ -29,28 +36,39 @@ export const TrendsPanel = observer(() => {
     Application.symbols.selectSymbol(symbol);
   };
 
+  const handleWidgetChange = (newType: WidgetType) => {
+    if (onWidgetChange) {
+      onWidgetChange(newType);
+    }
+  };
+
   return (
-    <div className="trends-panel">
-      <div className="trends-header">
-        <h2>Watchlist</h2>
-        <button
-          className="add-symbol-btn"
-          onClick={() => setShowAddInput(true)}
-          title="Add Symbol"
-        >
-          +
-        </button>
-      </div>
+    <div className="WidgetWatchlist">
+      <WidgetHeader
+        widgetType="watchlist"
+        onWidgetChange={handleWidgetChange}
+        actions={
+          <button
+            className="WidgetWatchlist__AddButton"
+            onClick={() => setShowAddInput(true)}
+            title="Add Symbol"
+          >
+            <Plus size={16} />
+          </button>
+        }
+      />
 
       {Application.symbols.error && (
-        <div className="error-message">
+        <div className="WidgetWatchlist__Error">
           {Application.symbols.error}
-          <button onClick={() => Application.symbols.clearError()}>×</button>
+          <button onClick={() => Application.symbols.clearError()}>
+            <X size={16} />
+          </button>
         </div>
       )}
 
       {showAddInput && (
-        <div className="add-symbol-input">
+        <div className="WidgetWatchlist__AddInput">
           <input
             type="text"
             value={newSymbol}
@@ -64,11 +82,11 @@ export const TrendsPanel = observer(() => {
         </div>
       )}
 
-      <div className="symbols-list">
+      <div className="WidgetWatchlist__List">
         {Application.symbols.isLoadingWatchlist && Application.symbols.watchlist.length === 0 ? (
-          <div className="loading">Loading symbols...</div>
+          <div className="WidgetWatchlist__Loading">Loading symbols...</div>
         ) : Application.symbols.watchlist.length === 0 ? (
-          <div className="empty-state">No symbols in watchlist</div>
+          <div className="WidgetWatchlist__Empty">No symbols in watchlist</div>
         ) : (
           Application.symbols.watchlist.map((ticker) => {
             // Access observable data directly in render for proper MobX reactivity
@@ -80,32 +98,18 @@ export const TrendsPanel = observer(() => {
             return (
               <div
                 key={ticker}
-                className={`symbol-row ${isSelected ? 'selected' : ''}`}
+                className={`WidgetWatchlist__Symbol ${isSelected ? 'WidgetWatchlist__Symbol--selected' : ''}`}
                 onClick={() => handleSelectSymbol(ticker)}
               >
-                <div className="symbol-info">
-                  <span className="symbol-name">{ticker}</span>
-                  <span className="symbol-price">
-                    {latestCandle ? `$${Number(latestCandle.close).toFixed(2)}` : '—'}
-                  </span>
-                </div>
-
+                <span className="WidgetWatchlist__SymbolName">{ticker}</span>
+                <span className={`WidgetWatchlist__SymbolPrice ${priceChange ? (priceChange.isPositive ? 'WidgetWatchlist__SymbolPrice--positive' : 'WidgetWatchlist__SymbolPrice--negative') : ''}`}>
+                  {latestCandle ? `$${Number(latestCandle.close).toFixed(2)}` : '—'}
+                </span>
                 {priceChange && (
-                  <div className={`price-change ${priceChange.isPositive ? 'positive' : 'negative'}`}>
-                    {priceChange.isPositive ? '▲' : '▼'} {Math.abs(priceChange.value).toFixed(2)}%
-                  </div>
+                  <span className={`WidgetWatchlist__SymbolChange ${priceChange.isPositive ? 'WidgetWatchlist__SymbolChange--positive' : 'WidgetWatchlist__SymbolChange--negative'}`}>
+                    {priceChange.isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />} {Math.abs(priceChange.value).toFixed(2)}%
+                  </span>
                 )}
-
-                <button
-                  className="remove-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveSymbol(ticker);
-                  }}
-                  title="Remove symbol"
-                >
-                  ×
-                </button>
               </div>
             );
           })
